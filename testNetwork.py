@@ -1,40 +1,36 @@
-import install_requirements
-
-import keras
-import numpy as np
+import os
 import tensorflow as tf
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt 
+import cv2 as cv 
+import numpy as np
 
-# FOR TESTING
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+current_dir = os.getcwd()
 
-mnist = tf.keras.datasets.mnist
-(x_train, y_train),(x_test, y_test) = mnist.load_data()
-x_test = tf.keras.utils.normalize(x_test, axis=1)
-for test in range(len(x_test)):
-    for row in range(28):
-        for x in range(28):
-            if x_test[test][row][x] != 0:
-                x_test[test][row][x] = 1
+# Import mnist data stored in the following path: current directory -> mnist.npz
+from tensorflow.keras.datasets import mnist
+(X_train, Y_train), (X_test, Y_test) = mnist.load_data(path=current_dir+'/mnist.npz')
+X_train = tf.keras.utils.normalize(X_train, axis=1)
+X_test = tf.keras.utils.normalize(X_test, axis=1)
 
+model = tf.keras.Sequential()
+model.add(tf.keras.layers.Flatten())
 
-model = tf.keras.models.load_model('m.model')
-print(len(x_test))
-predictions = model.predict(x_test[:10])
+model.add(tf.keras.layers.Dense(128,activation= tf.nn.relu))
+model.add(tf.keras.layers.Dense(128,activation= tf.nn.relu))
+model.add(tf.keras.layers.Dense(10,activation= tf.nn.softmax))
 
-count = 0
-for x in range(len(predictions)):
-    guess = (np.argmax(predictions[x]))
-    actual = y_test[x]
-    print("I predict this number is a:", guess)
-    print("Number Actually Is a:", actual)
-    if guess != actual:
-        #print("--------------")
-        #print('WRONG')
-        #print('---------------')
-        count+=1
-    plt.imshow(x_test[x], cmap=plt.cm.binary)
+model.compile(optimizer='Adam', loss="sparse_categorical_crossentropy", metrics=['accuracy'], loss_weights=None,
+              sample_weight_mode=None, weighted_metrics=None)
+model.fit(X_train, Y_train, epochs=3)
+loss,accuracy = model.evaluate(X_test,Y_test)
+print(loss)
+print(accuracy)
+
+for x in range(0,10):
+    img = cv.imread(f'E:\code\AI\Xiangpi-AI-with-board-recognition-via-Rasp-Camera-Module\\test_data\\{x}.png')[:,:,0]
+    img = np.invert(np.array([img]))
+    prediction = model.predict(img)
+    print(f"I guess the number is: {np.argmax(prediction)}")
+    plt.imshow(img[0], cmap=plt.cm.binary)
     plt.show()
-
-print("The program got", count, 'wrong, out of', len(x_test))
-print(str(100 - ((count/len(x_test))*100)) + '% correct')
-
