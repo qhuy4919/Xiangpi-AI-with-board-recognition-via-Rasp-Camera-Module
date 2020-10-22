@@ -24,7 +24,7 @@ print(loss)
 print(accuracy)
 
 for x in range(0,10):
-    img = cv.imread(f'E:\code\AI\Xiangpi-AI-with-board-recognition-via-Rasp-Camera-Module\\test_data\\{x}.png')[:,:,0]
+    img = cv.imread(f'E:\code\AI\Xiangpi-AI-with-board-recognition-via-Rasp-Camera-Module\HandWritten_digits\\test_data\\{x}.png')[:,:,0]
     img = np.invert(np.array([img]))
     prediction = model.predict(img)
     print(f"I guess the number is: {np.argmax(prediction)}")
