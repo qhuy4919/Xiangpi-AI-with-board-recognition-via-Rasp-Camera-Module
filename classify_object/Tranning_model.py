@@ -10,15 +10,15 @@ from keras.preprocessing.image import ImageDataGenerator
 import pickle
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1" #disable GPU 
 
-##PARAMATERS##
+##paramaters##
 path = "./classify_object/Trainning_data"
 labelFile = './classify_object/Labels.csv'
 batch_size_val = 50
 steps_per_epoch_val = 200
-epochs_val = 20
+epochs_val = 200
 imageDimesions = (150,150,3)
-testRatio = 0.2
-validationRatio = 0.2 
+testRatio = 0.01
+validationRatio = 0.01
 
 count = 0
 images = []
@@ -31,6 +31,7 @@ for x in range (0,len(myList)):
     myPicList = os.listdir(path+"/"+str(count))
     for y in myPicList:
         curImg = cv2.imread(path+"/"+str(count)+"/"+y)
+        curImg = cv2.resize(curImg, (150, 150))
         images.append(curImg)
         classNo.append(count)
     print(count, end =" ")
@@ -54,7 +55,7 @@ print("Test",end = "");print(X_test.shape,"-",y_test.shape)
 data= pd.read_csv(labelFile,encoding='latin-1',error_bad_lines=False)
 print("data shape ",data.shape,type(data))
 
-###CHECK WHETHER INPUT VALID OR NOT 
+###check everything 
 assert(X_train.shape[0]==y_train.shape[0]), "The number of images in not equal to the number of lables in training set"
 assert(X_validation.shape[0]==y_validation.shape[0]), "The number of images in not equal to the number of lables in validation set"
 assert(X_test.shape[0]==y_test.shape[0]), "The number of images in not equal to the number of lables in test set"
@@ -79,29 +80,33 @@ def preprocessing(img):
     img = img/255            # TO NORMALIZE VALUES BETWEEN 0 AND 1 INSTEAD OF 0 TO 255
     return img
  
-X_train=np.array(list(map(preprocessing,X_train)))  # TO IRETATE AND PREPROCESS ALL IMAGES
+X_train=np.array(list(map(preprocessing,X_train))) 
 X_validation=np.array(list(map(preprocessing,X_validation)))
 X_test=np.array(list(map(preprocessing,X_test)))
 print("ok")
+print(noOfClasses)
+print(X_train.shape)
+print()
+
 ############################### ADD A DEPTH OF 1
 X_train= X_train.reshape(X_train.shape[0],X_train.shape[1],X_train.shape[2],1)
 X_validation= X_validation.reshape(X_validation.shape[0],X_validation.shape[1],X_validation.shape[2],1)
 X_test= X_test.reshape(X_test.shape[0],X_test.shape[1],X_test.shape[2],1)
 
 #################AUGMENTATAION OF IMAGES: TO MAKEIT MORE GENERIC
-dataGen= ImageDataGenerator(width_shift_range=0.1,   # 0.1 = 10%     IF MORE THAN 1 E.G 10 THEN IT REFFERS TO NO. OF PIXELS EG 10 PIXELS
+dataGen= ImageDataGenerator(width_shift_range=0.1,   # 0.1 = 10%     IF MORE THAN 1 E.G 10 THEN IT REFFERS TO NO. OF  PIXELS EG 10 PIXELS
                             height_shift_range=0.1,
                             zoom_range=0.2,  # 0.2 MEANS CAN GO FROM 0.8 TO 1.2
-                            shear_range=0.1,  # MAGNITUDE OF SHEAR ANGLE
+                            shear_range=0.1,  # MAGNITUDE OF SHEAR ANGLE    
                             rotation_range=10)  # DEGREES
 dataGen.fit(X_train)
-batches= dataGen.flow(X_train,y_train,batch_size=20)
-X_batch,y_batch = next(batches)
+batches = dataGen.flow(X_train,y_train,batch_size=20, save_to_dir='./classify_object./data_generator')
+X_batch, y_batch = next(batches)
 
 y_train = tf.keras.utils.to_categorical(y_train,noOfClasses)
 y_validation = tf.keras.utils.to_categorical(y_validation,noOfClasses)
 y_test = tf.keras.utils.to_categorical(y_test,noOfClasses)
-################CNN MODEL
+################CNN model
 def myModel():
     model = tf.keras.models.Sequential()
     model.add(tf.keras.layers.Conv2D(
@@ -115,7 +120,9 @@ def myModel():
     model.add(tf.keras.layers.Flatten())
     model.add(tf.keras.layers.Dense(units=128, activation='relu'))
     model.add(tf.keras.layers.Dropout(rate=0.5))
-    model.add(tf.keras.layers.Dense(units=3, activation='softmax'))
+    model.add(tf.keras.layers.Dense(units=128, activation='relu'))
+    model.add(tf.keras.layers.Dropout(rate=0.5))
+    model.add(tf.keras.layers.Dense(units=15, activation='softmax'))
     model.compile(loss=tf.keras.losses.categorical_crossentropy,
                   optimizer=tf.keras.optimizers.Adam(),
                   metrics=['accuracy'])
@@ -124,16 +131,29 @@ def myModel():
 ############################### TRAIN
 model = myModel()
 model.summary()
-model.fit(X_train, y_train, batch_size=batch_size_val, epochs=20, validation_data=(X_test, y_test))
+history=model.fit_generator(dataGen.flow(X_train,y_train,batch_size=batch_size_val),steps_per_epoch=steps_per_epoch_val,
+epochs=epochs_val,validation_data=(X_validation,y_validation),shuffle=1)
 loss,accuracy = model.evaluate(X_test,y_test)
 print(loss)
 print(accuracy)
-# ##########################RESULT
+# ##########################result
 def getCalssName(classNo):
     if   classNo == 0: return 'empty'
-    elif classNo == 1: return 'black'
-    elif classNo == 2: return 'red'
-###################TEST
+    elif classNo == 1: return 'chuot_black'
+    elif classNo == 2: return 'phao_black'
+    elif classNo == 3: return 'xe_black'
+    elif classNo == 4: return 'ma_black'
+    elif classNo == 5: return 'tinh_black'
+    elif classNo == 6: return 'si_black'
+    elif classNo == 7: return 'tuong_black'
+    elif classNo == 8: return 'chuot_red'
+    elif classNo == 9: return 'phao_red '
+    elif classNo == 10: return 'xe_red'
+    elif classNo == 11: return 'ma_red'
+    elif classNo == 12: return 'tinh_red'
+    elif classNo == 13: return 'si_red'
+    elif classNo == 14: return 'tuong_red'
+#############test 
 path_test_folder = "./classify_object/Test_data"
 TestList = os.listdir(path_test_folder)
 for x in TestList:

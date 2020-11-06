@@ -1,4 +1,16 @@
 Class ,Name 
-0,trống
-1,đen
-2,đỏ
+0,empty
+1,chuot_black
+2,phao_black
+3,xe_black
+4,ma_black
+5,tuong_black
+6,si_black
+7,tuong_black
+8,chuot_red
+9,phao_red
+10,xe_red
+11,ma_red
+12,tuong_red
+13,si_red
+14,tuong_red
